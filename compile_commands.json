@@ -1,0 +1,23 @@
+[
+    {
+        "arguments": [
+            "x86_64-elf-gcc",
+            "-c",
+            "-std=c11",
+            "-ffreestanding",
+            "-O2",
+            "-Wall",
+            "-Wextra",
+            "-Werror",
+            "-Wpedantic",
+            "-fno-plt",
+            "-Iinc",
+            "-Isrc",
+            "-o",
+            "src/boot.o",
+            "src/boot.S"
+        ],
+        "directory": "/home/hgoel/Documents/Cardinal2/kernel",
+        "file": "src/boot.S"
+    }
+]

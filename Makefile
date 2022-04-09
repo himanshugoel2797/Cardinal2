@@ -16,5 +16,5 @@ run: iso
 
 clean:
 	make -C kernel clean
-	rm os.iso
-	rm -rf iso
+	@rm os.iso
+	@rm -rf iso

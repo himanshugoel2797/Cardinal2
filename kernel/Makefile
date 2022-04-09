@@ -1,12 +1,12 @@
 
 CC=x86_64-elf-gcc
-CFLAGS=-std=c11 -ffreestanding -O2 -Wall -Wextra -Werror -Wpedantic -fno-plt
+CFLAGS=-std=c11 -ffreestanding -O2 -Wall -Wextra -Werror -Wpedantic -Wno-unused-parameter -fno-plt
 LDFLAGS= -T linker.ld -ffreestanding -O2 -mno-red-zone -nostdlib -z max-page-size=0x1000 -mcmodel=large -fno-plt
 
 INC_DIRS="-Iinc" "-Isrc"
 
 ASM_SRCS=src/boot.o
-OBJS=$(find src/ -name '*.c' -print | sed 's/\.c$/\.o/') $(ASM_SRCS)
+OBJS=$(ASM_SRCS) src/main.o src/bootinfo.o
 
 .PHONY: all clean
 

@@ -1,3 +1,5 @@
+#include <stddef.h>
+#include <stdint.h>
 #include "multiboot2.h"
 
 __attribute__((section(".entry_point")))
