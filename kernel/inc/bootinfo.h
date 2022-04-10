@@ -40,4 +40,6 @@ typedef struct {
     uint8_t fb_blue_mask_sz;
 } bootinfo_t;
 
+int bootinfo_parse_and_store(void *bootinfo, uint32_t magic);
+
 #endif

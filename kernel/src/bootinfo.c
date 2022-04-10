@@ -1,4 +1,5 @@
 #include "multiboot2.h"
+#include "kerndefs.h"
 #include "bootinfo.h"
 
 static bootinfo_t bootinfo;
@@ -14,7 +15,7 @@ extern uint64_t KERNEL_VADDR;
 
 static uint64_t kernel_start_phys, kernel_end_phys;
 
-int bootinfo_parse_and_store(void *bootinfo, uint32_t magic){
+int bootinfo_parse_and_store(void *bootinfo_src, uint32_t magic){
     if (magic != MULTIBOOT2_BOOTLOADER_MAGIC){
         return -1;
     }
@@ -22,7 +23,7 @@ int bootinfo_parse_and_store(void *bootinfo, uint32_t magic){
     kernel_start_phys = (uint64_t)&_region_kernel_start_;
     kernel_end_phys = (uint64_t)&_region_kernel_end_;
 
-    uint8_t *hdr_8 = (uint8_t *)bootinfo;
+    uint8_t *hdr_8 = (uint8_t *)bootinfo_src;
     uint32_t total_size = *(uint32_t *)hdr_8;
     memset(&bootinfo, 0, sizeof(bootinfo_t));
 
@@ -52,10 +53,10 @@ int bootinfo_parse_and_store(void *bootinfo, uint32_t magic){
                             uint64_t diff = MiB(2) - mmap_e->addr;
                             if (diff >= mmap_e->len)
                                 continue;
-                        }
 
-                        mmap_e->addr += diff;
-                        mmap_e->len -= diff;
+                            mmap_e->addr += diff;
+                            mmap_e->len -= diff;
+                        }
 
                         //Reserve kernel memory
                         if (mmap_e->addr >= kernel_start_phys)
@@ -109,7 +110,7 @@ int bootinfo_parse_and_store(void *bootinfo, uint32_t magic){
             case MULTIBOOT_TAG_TYPE_ACPI_NEW:
                 {
                     multiboot_tag_new_acpi_t *acpi = (multiboot_tag_new_acpi_t*)(hdr_8 + i);
-                    bootinfo.acpi_rsdp_addr = acpi->rsdp;
+                    bootinfo.acpi_rsdp_addr = (uint64_t)acpi->rsdp;
                 }
                 break;
             case MULTIBOOT_TAG_TYPE_MODULE:
