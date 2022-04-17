@@ -41,5 +41,6 @@ typedef struct {
 } bootinfo_t;
 
 int bootinfo_parse_and_store(void *bootinfo, uint32_t magic);
+bootinfo_t* bootinfo_get(void);
 
 #endif

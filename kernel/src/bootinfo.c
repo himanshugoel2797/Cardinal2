@@ -139,3 +139,8 @@ int bootinfo_parse_and_store(void *bootinfo_src, uint32_t magic){
     }
     return 0;
 }
+
+bootinfo_t* bootinfo_get()
+{
+    return &bootinfo;
+}
