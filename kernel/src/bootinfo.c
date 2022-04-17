@@ -1,6 +1,7 @@
+#include <string.h>
 #include "multiboot2.h"
-#include "kerndefs.h"
 #include "bootinfo.h"
+#include "bootstrap.h"
 
 static bootinfo_t bootinfo;
 
@@ -37,7 +38,7 @@ int bootinfo_parse_and_store(void *bootinfo_src, uint32_t magic){
                 {
                     multiboot_tag_mmap_t *mmap = (multiboot_tag_mmap_t*)(hdr_8 + i);
                     uint32_t entryCnt = (mmap->size - 16) / mmap->entry_size;
-                    bootinfo_mmap_t *map = malloc(sizeof(bootinfo_mmap_t) * entryCnt);
+                    bootinfo_mmap_t *map = bootstrap_malloc(sizeof(bootinfo_mmap_t) * entryCnt);
 
                     uint32_t mmap_entry = 0;
                     for (uint32_t j = 0; j < (mmap->size - 16); j += mmap->entry_size)
