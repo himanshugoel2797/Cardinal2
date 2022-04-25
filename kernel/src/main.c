@@ -11,6 +11,7 @@ int main(void *param, uint64_t magic)
         return -1;
 
     bootinfo_parse_and_store(param, magic);
+    halt();
 
     return 0;
 }

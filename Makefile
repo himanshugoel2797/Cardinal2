@@ -12,7 +12,7 @@ iso: kernel
 	grub-mkrescue -o os.iso iso
 
 run: iso
-	qemu-system-x86_64 -cdrom os.iso -boot d
+	qemu-system-x86_64 --enable-kvm -m 2G -machine q35, -cpu host -d int,cpu_reset,guest_errors -cdrom os.iso -boot d
 
 clean:
 	make -C kernel clean
