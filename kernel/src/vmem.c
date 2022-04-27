@@ -72,7 +72,7 @@ static bool largepage_avail[] = {
     true,
 };
 
-static TLS struct lcl_data *lcl;
+static TLS struct lcl_data *lcl = NULL;
 static vmem_t kmem;
 static size_t phys_map_sz;
 
@@ -94,6 +94,7 @@ void vmem_vfree(intptr_t virt, size_t sz)
 
 int vmem_init()
 {
+
     //Enable No Execute bit
     wrmsr(EFER_MSR, rdmsr(EFER_MSR) | (1 << 11));
 
@@ -117,7 +118,6 @@ int vmem_init()
     bool hugepage = (d >> 26) & 1;
     if (hugepage)
         largepage_avail[1] = true;
-
     //Setup PAT
     uint64_t pat = 0;
     pat |= 0x6;                   //PAT0 WB
@@ -129,11 +129,13 @@ int vmem_init()
     uintptr_t ktable_phys = pagealloc_alloc(-1, -1, physmem_alloc_flags_pagetable, KiB(4));
     uint64_t *ktable = (uint64_t *)vmem_phystovirt(ktable_phys, KiB(4), vmem_flags_cachewriteback);
     memset(ktable, 0, KiB(4));
+    //__asm__ volatile("hlt" :: "a"(ktable_phys), "b"(ktable));
 
     if (lcl == NULL)
     {
         //mp_tls_alloc(8);
-        lcl = (TLS struct lcl_data *)mp_tls_get(mp_tls_alloc(sizeof(struct lcl_data)));
+        int off = mp_tls_alloc(sizeof(struct lcl_data));
+        lcl = (TLS struct lcl_data *)mp_tls_get(off);
     }
     lcl->ktable = ktable_phys;
     {

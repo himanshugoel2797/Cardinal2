@@ -37,7 +37,7 @@ int bootinfo_parse_and_store(void *bootinfo_src, uint32_t magic){
             case MULTIBOOT_TAG_TYPE_MMAP:
                 {
                     multiboot_tag_mmap_t *mmap = (multiboot_tag_mmap_t*)(hdr_8 + i);
-                    uint32_t entryCnt = (mmap->size - 16) / mmap->entry_size;
+                    uint32_t entryCnt = ((mmap->size - 16) / mmap->entry_size) * 2; //Allocate twice the number of entries in case of split entries
                     bootinfo_mmap_t *map = bootstrap_malloc(sizeof(bootinfo_mmap_t) * entryCnt);
 
                     uint32_t mmap_entry = 0;
@@ -62,13 +62,28 @@ int bootinfo_parse_and_store(void *bootinfo_src, uint32_t magic){
                         //Reserve kernel memory
                         if (mmap_e->addr >= kernel_start_phys)
                         {
-                            uint64_t diff = kernel_end_phys - mmap_e->addr;
-                            if (mmap_e->addr + mmap_e->len < kernel_end_phys)
+                            //Create an entry for memory before the kernel
+                            if (mmap_e->addr < kernel_start_phys)
                             {
-                                mmap_e->addr += diff;
-                                mmap_e->len -= diff;
+                                map[mmap_entry].addr = mmap_e->addr;
+                                map[mmap_entry].len = kernel_start_phys - mmap_e->addr;
+                                map[mmap_entry].type = bootinfo_mem_type_available;
+                                mmap_entry++;
+
+                                mmap_e->addr = kernel_start_phys;
+                                mmap_e->len -= kernel_start_phys - mmap_e->addr;
                             }
+
+                            uint64_t diff = kernel_end_phys - mmap_e->addr;
+                            if (diff >= mmap_e->len)
+                                continue;
+
+                            mmap_e->addr += diff;
+                            mmap_e->len -= diff;
                         }
+
+                        if (mmap_e->len == 0)
+                            continue;
 
                         map[mmap_entry].addr = mmap_e->addr;
                         map[mmap_entry].len = mmap_e->len;

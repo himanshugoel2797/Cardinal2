@@ -1,4 +1,4 @@
-.PHONY: all kernel iso run clean
+.PHONY: all kernel iso run rund clean
 
 all: kernel
 
@@ -13,6 +13,9 @@ iso: kernel
 
 run: iso
 	qemu-system-x86_64 --enable-kvm -m 2G -machine q35, -cpu host -d int,cpu_reset,guest_errors -cdrom os.iso -boot d
+
+rund: iso
+	qemu-system-x86_64 -s -S --enable-kvm -m 2G -machine q35, -cpu host -d int,cpu_reset,guest_errors -cdrom os.iso -boot d
 
 clean:
 	make -C kernel clean
