@@ -82,6 +82,13 @@ typedef enum
     CPUID_EAX_FIRST_PAGE = 1
 } CPUID_REQUESTS;
 
+typedef enum
+{
+    CPUID_VENDOR_INTEL = 0,
+    CPUID_VENDOR_AMD,
+} CPUID_VENDORS;
+
 void cpuid_request(uint32_t page, uint32_t idx, uint32_t *a, uint32_t *b, uint32_t *c, uint32_t *d);
+void cpuid_manufacturer(int *manufacturer, uint32_t *stepping, uint32_t *model, uint32_t *family, uint32_t *proc_type);
 
 #endif
