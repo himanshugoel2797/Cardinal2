@@ -75,6 +75,9 @@ int bootinfo_parse_and_store(void *bootinfo_src, uint32_t magic){
                         map[mmap_entry].type = mmap_e->type;
                         mmap_entry++;
                     }
+
+                    bootinfo.mmap = map;
+                    bootinfo.mmap_cnt = entryCnt;
                 }
                 break;
             case MULTIBOOT_TAG_TYPE_FRAMEBUFFER:

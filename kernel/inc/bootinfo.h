@@ -20,7 +20,7 @@ typedef struct {
     uint32_t elf_shdr_num;
     uint32_t elf_shdr_entsize;
     uint32_t elf_shdr_shndx;
-    uint32_t mmap_len;
+    uint32_t mmap_cnt;
     uint64_t elf_shdr_addr;
     uint64_t acpi_rsdp_addr;
     uint64_t initrd_addr;
