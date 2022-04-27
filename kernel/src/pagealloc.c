@@ -8,6 +8,7 @@
 #include "stddef.h"
 #include "stdint.h"
 #include "stdbool.h"
+#include "stdlib.h"
 #include "string.h"
 
 #include "pagealloc.h"
@@ -245,9 +246,15 @@ int pagealloc_init() {
     //TODO: queue size becomes large with memory size increase, figure out how to keep it manageable
     //TODO: also fix memsize calculation so it reflects usable memory size, rather than address space size
 
+    // get malloc and free hooks
+    void* (*malloc_hook)(size_t) = NULL;
+    void (*free_hook)(void *) = NULL;
+    get_malloc_hook(&malloc_hook);
+    get_free_hook(&free_hook);
+
     // Allocate the blocks
     if (queue_init(&btm_level,
-                   btm_sz / 2 + 1, bootstrap_malloc, NULL) !=
+                   btm_sz / 2 + 1, malloc_hook, free_hook) !=
             0) // Worst case requires half the number of entries as are pages
         PANIC("Queue init failure!");
 

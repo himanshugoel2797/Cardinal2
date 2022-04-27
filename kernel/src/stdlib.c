@@ -11,13 +11,23 @@
 #include "stdlib.h"
 
 //malloc and free hooks variables
-static void *(*__malloc_hook)(size_t) = NULL;
+static void* (*__malloc_hook)(size_t) = NULL;
 static void (*__free_hook)(void *) = NULL;
 
 void update_malloc_free_hooks(void *(*malloc_hook)(size_t), void (*free_hook)(void *))
 {
     __malloc_hook = malloc_hook;
     __free_hook = free_hook;
+}
+
+void get_malloc_hook(void* (**malloc_hook)(size_t))
+{
+    *malloc_hook = __malloc_hook;
+}
+
+void get_free_hook(void (**free_hook)(void *))
+{
+    *free_hook = __free_hook;
 }
 
 void* malloc(size_t size)

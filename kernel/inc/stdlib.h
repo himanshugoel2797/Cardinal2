@@ -9,11 +9,11 @@
 #include "stddef.h"
 #include "stdint.h"
 
-#ifndef NULL
-#define NULL ((void *)0)
-#endif
+void update_malloc_free_hooks(void* (*malloc_hook)(size_t), void (*free_hook)(void *));
 
-void update_malloc_free_hooks(void *(*malloc_hook)(size_t), void (*free_hook)(void *));
+void get_malloc_hook(void* (**malloc_hook)(size_t));
+
+void get_free_hook(void (**free_hook)(void *));
 
 void *malloc(size_t size);
 

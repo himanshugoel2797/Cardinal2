@@ -5,12 +5,14 @@
  * https://opensource.org/licenses/MIT
  */
 
+#include "stdlib.h"
 #include "string.h"
 #include "kerndefs.h"
 #include "local_spinlock.h"
 #include "pagealloc.h"
-#include "vmem.h"
+#include "cpuid.h"
 #include "mp.h"
+#include "vmem.h"
 
 #define PRESENT (1ull << 0)
 #define WRITE (1ull << 1)
@@ -96,10 +98,10 @@ int vmem_init()
     wrmsr(EFER_MSR, rdmsr(EFER_MSR) | (1 << 11));
 
     //Detect and enable SMEP/SMAP
-    bool smep = false;
-    registry_readkey_bool("HW/PROC", "SMEP", &smep);
-    bool smap = false;
-    registry_readkey_bool("HW/PROC", "SMAP", &smap);
+    uint32_t a, b, c, d;
+    cpuid_request(7, 0, &a, &b, &c, &d);
+    bool smep = (b >> 7) & 1;
+    bool smap = (b >> 20) & 1;
 
     uint64_t cr4 = 0;
     __asm__ volatile("mov %%cr4, %0"
@@ -111,8 +113,8 @@ int vmem_init()
     __asm__ volatile("mov %0, %%cr4" ::"r"(cr4));
 
     //Detect and enable 1GiB page support
-    bool hugepage = false;
-    registry_readkey_bool("HW/PROC", "HUGEPAGE", &hugepage);
+    cpuid_request(0x80000001, 0, &a, &b, &c, &d);
+    bool hugepage = (d >> 26) & 1;
     if (hugepage)
         largepage_avail[1] = true;
 
@@ -168,10 +170,10 @@ int vmem_mp_init()
     wrmsr(EFER_MSR, rdmsr(EFER_MSR) | (1 << 11));
 
     //Detect and enable SMEP/SMAP
-    bool smep = false;
-    registry_readkey_bool("HW/PROC", "SMEP", &smep);
-    bool smap = false;
-    registry_readkey_bool("HW/PROC", "SMAP", &smap);
+    uint32_t a, b, c, d;
+    cpuid_request(7, 0, &a, &b, &c, &d);
+    bool smep = (b >> 7) & 1;
+    bool smap = (b >> 20) & 1;
 
     uint64_t cr4 = 0;
     __asm__ volatile("mov %%cr4, %0"
@@ -183,8 +185,8 @@ int vmem_mp_init()
     __asm__ volatile("mov %0, %%cr4" ::"r"(cr4));
 
     //Detect and enable 1GiB page support
-    bool hugepage = false;
-    registry_readkey_bool("HW/PROC", "HUGEPAGE", &hugepage);
+    cpuid_request(0x80000001, 0, &a, &b, &c, &d);
+    bool hugepage = (d >> 26) & 1;
     if (hugepage)
         largepage_avail[1] = true;
 

@@ -6,6 +6,7 @@
  */
 
 
+#include "stdlib.h"
 #include "string.h"
 #include "local_spinlock.h"
 #include "mp.h"
