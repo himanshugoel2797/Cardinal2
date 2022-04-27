@@ -6,7 +6,8 @@ LDFLAGS= -T linker.ld -ffreestanding -O2 -mno-red-zone -nostdlib -z max-page-siz
 INC_DIRS="-Iinc" "-Isrc"
 
 ASM_SRCS=src/boot.o
-OBJS=$(ASM_SRCS) src/stdlib.o src/containers/queue.o src/cpuid.o src/pagealloc.o src/mp.o src/vmem.o src/bootinfo.o src/memory.o src/bootstrap_alloc.o src/debug.o src/main.o
+OBJS=$(ASM_SRCS) src/stdlib.o src/containers/queue.o src/cpuid.o src/acpi.o src/pagealloc.o src/mp.o src/interrupts/apic.o src/interrupts/gdt.o src/interrupts/idt.o src/interrupts/ioapic.o src/vmem.o \
+src/bootinfo.o src/memory.o src/bootstrap_alloc.o src/debug.o src/main.o
 
 .PHONY: all clean
 

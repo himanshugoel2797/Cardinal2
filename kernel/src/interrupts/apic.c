@@ -10,6 +10,7 @@
 #include "stddef.h"
 #include "kerndefs.h"
 #include "cpuid.h"
+#include "mp.h"
 #include "interrupts/interrupts.h"
 #include "vmem.h"
 
@@ -95,7 +96,7 @@ int apic_init() {
     apic_base_reg |= (1 << 11); //Enable the apic
     {
         uint32_t a, b, c, d;
-        cpuid_request(1, &a, &b, &c, &d);
+        cpuid_request(1, 0, &a, &b, &c, &d);
         bool x2apic_sup = (c >> 21) & 1;
 
         apic->x2apic_mode = x2apic_sup;
