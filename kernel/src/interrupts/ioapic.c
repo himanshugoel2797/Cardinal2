@@ -14,6 +14,8 @@
 #include "kerndefs.h"
 
 #include "vmem.h"
+#include "acpi/acpi_tables.h"
+#include "acpi/madt.h"
 #include "interrupts/interrupts.h"
 
 typedef struct {
@@ -117,86 +119,88 @@ void interrupt_setmask(uint32_t line, bool mask) {
 }
 
 int ioapic_init() {
-    //Read the registry
-    uint64_t count = 0;
-    if(registry_readkey_uint("HW/IOAPIC", "COUNT", &count) != registry_err_ok)
+    //Read the MADT table
+    MADT *madt = acpi_find(MADT_SIG);
+    if (madt == NULL)
         return -1;
 
-    ioapics = malloc(sizeof(ioapic_t) * count);
-    ioapic_cnt = (int)count;
+    uint32_t madt_len = madt->h.Length - 8 - sizeof(ACPISDTHeader);
+    uint32_t lapic_cnt = 0;
+    uint32_t ioapic_cnt = 0;
+    uint32_t isaovr_cnt = 0;
 
-    for(int i = 0; i < ioapic_cnt; i++) {
-        char idx_str[10] = "";
-        char key_str[256] = "HW/IOAPIC/";
-        char *key_idx = strncat(key_str, itoa(i, idx_str, 16), 255);
-
-        uint64_t id = 0;
-        uint64_t base_addr = 0;
-        uint64_t intr_base = 0;
-
-        if(registry_readkey_uint(key_idx, "ID", &id) != registry_err_ok)
-            return -1;
-
-        if(registry_readkey_uint(key_idx, "BASE_ADDR", &base_addr) != registry_err_ok)
-            return -1;
-
-        if(registry_readkey_uint(key_idx, "GLOBAL_INTR_BASE", &intr_base) != registry_err_ok)
-            return -1;
-
-        ioapics[i].id = (uint32_t)id;
-        ioapics[i].base_addr = (uint32_t volatile *)vmem_phystovirt(base_addr, KiB(8), vmem_flags_uncached);
-        ioapics[i].global_intr_base = (uint32_t)intr_base;
-
-        //Configure the detected overrides
-        uint64_t available_redirs = ((ioapic_read(i, 0x01) >> 16) & 0xff) + 1;
-
-        for(uint64_t j = 0; j < available_redirs; j++) {
-            char idx2_str[10] = "";
-            char key2_str[256] = "";
-
-            char *key2_idx = strncpy(key2_str, key_idx, 255);
-            strncat(key2_str, "/OVERRIDE/", 255);
-            strncat(key2_str, itoa(j + intr_base, idx2_str, 16), 255);
-
-            uint64_t irq = 0;
-            uint64_t bus = 0;
-            bool active_low = false;
-            bool level_trigger = false;
-
-            int err = registry_readkey_uint(key2_idx, "IRQ", &irq);
-            if(err == registry_err_dne) {
-                //Configure this entry as normal
-                ioapic_map(i, j, j + intr_base + 0x20, false, false);
-                ioapic_setmask(i, j, true);
-                continue;
-            }
-
-            if(err != registry_err_ok)
-                return -1;
-
-            registry_readkey_uint(key2_idx, "BUS", &bus);
-            registry_readkey_bool(key2_idx, "ACTIVE_LOW", &active_low);
-            registry_readkey_bool(key2_idx, "LEVEL_TRIGGER", &level_trigger);
-
-            char int_buf[10];
-            DEBUG_PRINT(itoa(irq, int_buf, 10));
-            DEBUG_PRINT(":");
-            DEBUG_PRINT(itoa(j + intr_base, int_buf, 10));
-            if(active_low)
-                DEBUG_PRINT(":active_low");
-            if(level_trigger)
-                DEBUG_PRINT(":level_trigger");
-            DEBUG_PRINT("\r\n");
-
-            ioapic_map(i, j, irq + 0x20, active_low, level_trigger);
-            ioapic_setmask(i, j, true);
-
-            int irq_num = irq + 0x20;
-            //if(interrupt_allocate(1, interrupt_flags_exclusive | interrupt_flags_fixed, &irq_num) != 0)
-            //    PANIC("Failed to reserve specified interrupt.");
+    for (uint32_t i = 0; i < madt_len;)
+    {
+        MADT_EntryHeader *hdr = (MADT_EntryHeader*)&madt->entries[i];
+        switch(hdr->type)
+        {
+            case MADT_LAPIC_ENTRY_TYPE:
+                lapic_cnt++;
+                break;
+            case MADT_IOAPIC_ENTRY_TYPE:
+                ioapic_cnt++;
+                break;
+            case MADT_ISAOVR_ENTRY_TYPE:
+                isaovr_cnt++;
+                break;
         }
+        i += hdr->entry_size;
+        if (hdr->entry_size == 0)
+            i += 8;
     }
 
+    ioapics = malloc(sizeof(ioapic_t) * ioapic_cnt);
+
+    uint32_t ioapic_idx = 0;
+    for (uint32_t off = 0; off < madt_len;)
+    {
+        MADT_EntryHeader *hdr = (MADT_EntryHeader*)&madt->entries[off];
+        if (hdr->type == MADT_IOAPIC_ENTRY_TYPE)
+        {
+            MADT_EntryIOAPIC *ioapic = (MADT_EntryIOAPIC*)&madt->entries[off];
+
+            ioapics[ioapic_idx].id = (uint32_t)ioapic->id;
+            ioapics[ioapic_idx].base_addr = (uint32_t volatile *)vmem_phystovirt(ioapic->base_addr, KiB(8), vmem_flags_uncached);
+            ioapics[ioapic_idx].global_intr_base = (uint32_t)ioapic->global_sys_int_base;
+
+            uint64_t available_redirs = ((ioapic_read(ioapic_idx, 0x01) >> 16) & 0xff) + 1;
+            for (uint32_t i = 0; i < available_redirs; i++)
+            {
+                //Configure this entry as normal
+                ioapic_map(ioapic_idx, i, i + ioapic->global_sys_int_base + 0x20, false, false);
+                ioapic_setmask(ioapic_idx, i, true);
+            }
+
+            ioapic_idx++;
+        }
+        off += hdr->entry_size;
+        if (hdr->entry_size == 0)
+            off += 8;
+    }
+    
+    //Configure the detected overrides
+    for (uint32_t off = 0; off < madt_len;)
+    {
+        MADT_EntryHeader *hdr = (MADT_EntryHeader*)&madt->entries[off];
+        if (hdr->type == MADT_ISAOVR_ENTRY_TYPE)
+        {
+            MADT_EntryISAOVR *isaovr = (MADT_EntryISAOVR*)&madt->entries[off];
+            for (ioapic_idx = 0; ioapic_idx < ioapic_cnt; ioapic_idx++)
+            {
+                uint64_t available_redirs = ((ioapic_read(ioapic_idx, 0x01) >> 16) & 0xff) + 1;
+                if (ioapics[ioapic_idx].global_intr_base <= isaovr->global_sys_int && ioapics[ioapic_idx].global_intr_base + available_redirs > isaovr->global_sys_int)
+                {
+                    uint32_t irq_pin = isaovr->global_sys_int - ioapics[ioapic_idx].global_intr_base;
+                    ioapic_map(ioapic_idx, irq_pin, isaovr->irq_src + 0x20, isaovr->flags & 2 /*active_low*/, isaovr->flags & 8 /*level_trigger*/);
+                    ioapic_setmask(ioapic_idx, irq_pin, true);
+                    break;
+                }
+            }
+        }
+        off += hdr->entry_size;
+        if (hdr->entry_size == 0)
+            off += 8;
+    }
 
     return 0;
 }

@@ -40,9 +40,9 @@ typedef struct PACKED {
 //! An IO APIC entry in the MADT
 typedef struct PACKED {
     MADT_EntryHeader h;
-    uint8_t io_apic_id;
+    uint8_t id;
     uint8_t reserved;
-    uint32_t io_apic_base_addr;
+    uint32_t base_addr;
     uint32_t global_sys_int_base;
 } MADT_EntryIOAPIC;
 #define MADT_IOAPIC_ENTRY_TYPE 1 //!< The type ID describing an IO APIC entry
@@ -55,7 +55,7 @@ typedef struct PACKED {
     uint32_t global_sys_int;
     uint16_t flags;
 } MADT_EntryISAOVR;
-#define MADT_ISAOVER_ENTRY_TYPE                                                \
+#define MADT_ISAOVR_ENTRY_TYPE                                                \
   2 //!< The type ID describing an ISA override entry
 
 //! An IO APIC Non-Maskable Interrupt mapping entry in the MADT
